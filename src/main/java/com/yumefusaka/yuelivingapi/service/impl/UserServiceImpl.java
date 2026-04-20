@@ -52,4 +52,14 @@ public class UserServiceImpl extends ServiceImpl<UserMapper, User> implements Us
         wrapper.eq(User::getStatus, 1); // 只获取启用状态的用户
         return userMapper.selectList(wrapper);
     }
+
+    @Override
+    public boolean changePassword(Long userId, String oldPassword, String newPassword) {
+        User user = userMapper.selectById(userId);
+        if (user != null && oldPassword.equals(user.getPassword())) {
+            user.setPassword(newPassword);
+            return userMapper.updateById(user) > 0;
+        }
+        return false;
+    }
 }

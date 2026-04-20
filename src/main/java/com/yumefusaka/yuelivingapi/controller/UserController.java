@@ -12,10 +12,13 @@ import com.yumefusaka.yuelivingapi.utils.JwtUtils;
 import org.springframework.beans.BeanUtils;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.web.bind.annotation.*;
-import java.util.List;
-
+import org.springframework.web.multipart.MultipartFile;
+import java.io.File;
+import java.io.IOException;
 import java.util.HashMap;
+import java.util.List;
 import java.util.Map;
+import java.util.UUID;
 
 @RestController
 @RequestMapping("/user")
@@ -116,3 +119,45 @@ public class UserController {
         }
         return Result.error("更新失败");
     }
+
+    @PutMapping("/profile/password")
+    public Result<String> changePassword(@RequestBody Map<String, String> passwordData) {
+        Long userId = Long.valueOf(BaseContext.getCurrentId());
+        String oldPassword = passwordData.get("oldPassword");
+        String newPassword = passwordData.get("newPassword");
+        if (userService.changePassword(userId, oldPassword, newPassword)) {
+            return Result.success("密码修改成功");
+        }
+        return Result.error("旧密码错误或修改失败");
+    }
+
+    @PostMapping("/profile/avatar")
+    public Result<Map<String, String>> uploadAvatar(@RequestParam("file") MultipartFile file) {
+        if (file.isEmpty()) {
+            return Result.error("文件为空");
+        }
+        try {
+            String originalFilename = file.getOriginalFilename();
+            String extension = originalFilename.substring(originalFilename.lastIndexOf("."));
+            String filename = UUID.randomUUID().toString() + extension;
+            String uploadDir = "uploads/avatars/";
+            File dir = new File(uploadDir);
+            if (!dir.exists()) {
+                dir.mkdirs();
+            }
+            File destFile = new File(uploadDir + filename);
+            file.transferTo(destFile);
+
+            Long userId = Long.valueOf(BaseContext.getCurrentId());
+            User user = userService.getById(userId);
+            user.setAvatar("/uploads/avatars/" + filename);
+            userService.updateById(user);
+
+            Map<String, String> data = new HashMap<>();
+            data.put("url", "/uploads/avatars/" + filename);
+            return Result.success(data);
+        } catch (IOException e) {
+            return Result.error("上传失败");
+        }
+    }
+}

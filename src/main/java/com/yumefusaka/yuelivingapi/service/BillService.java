@@ -7,4 +7,5 @@ import java.util.List;
 
 public interface BillService extends IService<Bill> {
     List<Bill> getBillsByUserId(Long userId);
+    List<Bill> getBillsWithFilter(java.util.Map<String, Object> params);
 }

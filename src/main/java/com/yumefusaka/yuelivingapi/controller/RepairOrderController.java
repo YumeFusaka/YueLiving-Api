@@ -7,11 +7,14 @@ import com.yumefusaka.yuelivingapi.pojo.Entity.RepairOrder;
 import com.yumefusaka.yuelivingapi.service.RepairOrderService;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.web.bind.annotation.*;
-
+import org.springframework.web.multipart.MultipartFile;
+import java.io.File;
+import java.io.IOException;
 import java.time.LocalDateTime;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.UUID;
 
 @RestController
 @RequestMapping("/repair")
@@ -108,5 +111,30 @@ public class RepairOrderController {
     public Result<String> deleteRepair(@PathVariable Long id) {
         repairOrderService.removeById(id);
         return Result.success("删除成功");
+    }
+
+    @PostMapping("/upload")
+    public Result<Map<String, String>> uploadImage(@RequestParam("file") MultipartFile file) {
+        if (file.isEmpty()) {
+            return Result.error("文件为空");
+        }
+        try {
+            String originalFilename = file.getOriginalFilename();
+            String extension = originalFilename.substring(originalFilename.lastIndexOf("."));
+            String filename = UUID.randomUUID().toString() + extension;
+            String uploadDir = "uploads/repairs/";
+            File dir = new File(uploadDir);
+            if (!dir.exists()) {
+                dir.mkdirs();
+            }
+            File destFile = new File(uploadDir + filename);
+            file.transferTo(destFile);
+
+            Map<String, String> data = new HashMap<>();
+            data.put("url", "/uploads/repairs/" + filename);
+            return Result.success(data);
+        } catch (IOException e) {
+            return Result.error("上传失败");
+        }
     }
 }

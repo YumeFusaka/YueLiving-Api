@@ -7,9 +7,9 @@ import com.yumefusaka.yuelivingapi.pojo.Entity.Bill;
 import com.yumefusaka.yuelivingapi.service.BillService;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.web.bind.annotation.*;
-
 import java.time.LocalDateTime;
 import java.util.List;
+import java.util.Map;
 
 @RestController
 @RequestMapping("/bill")
@@ -27,8 +27,8 @@ public class BillController {
 
     @GetMapping
     @RoleRequired({RoleEnum.PROPERTY_MANAGER, RoleEnum.SYSTEM_ADMIN})
-    public Result<List<Bill>> getAllBills() {
-        List<Bill> bills = billService.list();
+    public Result<List<Bill>> getAllBills(@RequestParam Map<String, Object> params) {
+        List<Bill> bills = billService.getBillsWithFilter(params);
         return Result.success(bills);
     }
 

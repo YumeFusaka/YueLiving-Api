@@ -11,6 +11,7 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 
 import java.util.List;
+import java.util.Map;
 import java.util.stream.Collectors;
 
 @Service
@@ -37,5 +38,18 @@ public class BillServiceImpl extends ServiceImpl<BillMapper, Bill> implements Bi
         LambdaQueryWrapper<Bill> billWrapper = new LambdaQueryWrapper<>();
         billWrapper.in(Bill::getPropertyId, propertyIds);
         return billMapper.selectList(billWrapper);
+    }
+
+    @Override
+    public List<Bill> getBillsWithFilter(Map<String, Object> params) {
+        LambdaQueryWrapper<Bill> wrapper = new LambdaQueryWrapper<>();
+        if (params.containsKey("status") && params.get("status") != null) {
+            wrapper.eq(Bill::getStatus, params.get("status"));
+        }
+        if (params.containsKey("type") && params.get("type") != null) {
+            wrapper.eq(Bill::getBillType, params.get("type"));
+        }
+        // 可以添加更多筛选条件，如日期范围等
+        return billMapper.selectList(wrapper);
     }
 }
