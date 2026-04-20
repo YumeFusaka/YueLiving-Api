@@ -101,12 +101,18 @@ public class UserController {
         return Result.error("更新失败");
     }
 
-    @DeleteMapping("/{id}")
-    @RoleRequired({RoleEnum.SYSTEM_ADMIN})
-    public Result<String> deleteUser(@PathVariable Long id) {
-        if (userService.removeById(id)) {
-            return Result.success("删除成功");
+    @PutMapping("/profile")
+    public Result<String> updateProfile(@RequestBody User user) {
+        Long userId = Long.valueOf(BaseContext.getCurrentId());
+        User existingUser = userService.getById(userId);
+        if (existingUser != null) {
+            // 只更新允许的字段
+            existingUser.setRealName(user.getRealName());
+            existingUser.setPhone(user.getPhone());
+            existingUser.setEmail(user.getEmail());
+            if (userService.updateById(existingUser)) {
+                return Result.success("更新成功");
+            }
         }
-        return Result.error("删除失败");
+        return Result.error("更新失败");
     }
-}
