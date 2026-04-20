@@ -10,4 +10,7 @@ public interface UserService extends IService<User> {
     boolean register(User user);
     List<User> getMaintenanceUsers();
     boolean changePassword(Long userId, String oldPassword, String newPassword);
+    void ensureUserEnabled(User user);
+    boolean canManageUser(Long operatorRoleId, Long targetRoleId);
+    boolean updateUserStatus(Long userId, Integer status);
 }

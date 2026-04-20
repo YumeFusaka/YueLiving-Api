@@ -19,7 +19,13 @@ public class Property {
 
     private BigDecimal area;
 
+    private String propertyType;
+
     private Long ownerId;
+
+    private String ownerNameSnapshot;
+
+    private LocalDateTime bindTime;
 
     private Integer status;
 

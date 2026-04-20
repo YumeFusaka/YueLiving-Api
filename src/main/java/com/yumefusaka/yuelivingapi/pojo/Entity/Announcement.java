@@ -12,9 +12,15 @@ public class Announcement {
 
     private String title;
 
+    private String summary;
+
     private String content;
 
+    private String categoryCode;
+
     private Integer isTop;
+
+    private String status;
 
     private Long publishUserId;
 

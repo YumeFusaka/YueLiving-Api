@@ -3,6 +3,7 @@ package com.yumefusaka.yuelivingapi.controller;
 import com.yumefusaka.yuelivingapi.common.role.RoleEnum;
 import com.yumefusaka.yuelivingapi.common.role.RoleRequired;
 import com.yumefusaka.yuelivingapi.common.result.Result;
+import com.yumefusaka.yuelivingapi.pojo.DTO.BindOwnerDTO;
 import com.yumefusaka.yuelivingapi.pojo.Entity.Property;
 import com.yumefusaka.yuelivingapi.service.PropertyService;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -44,6 +45,20 @@ public class PropertyController {
     public Result<String> updateProperty(@RequestBody Property property) {
         propertyService.updateById(property);
         return Result.success("更新成功");
+    }
+
+    @PutMapping("/bind-owner")
+    @RoleRequired({RoleEnum.PROPERTY_MANAGER, RoleEnum.SYSTEM_ADMIN})
+    public Result<String> bindOwner(@RequestBody BindOwnerDTO dto) {
+        propertyService.bindOwner(dto);
+        return Result.success("绑定成功");
+    }
+
+    @PutMapping("/{id}/unbind-owner")
+    @RoleRequired({RoleEnum.PROPERTY_MANAGER, RoleEnum.SYSTEM_ADMIN})
+    public Result<String> unbindOwner(@PathVariable Long id) {
+        propertyService.unbindOwner(id);
+        return Result.success("解绑成功");
     }
 
     @DeleteMapping("/{id}")

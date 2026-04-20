@@ -9,6 +9,7 @@ import com.yumefusaka.yuelivingapi.service.UserService;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 
+import java.time.LocalDateTime;
 import java.util.List;
 
 @Service
@@ -20,9 +21,12 @@ public class UserServiceImpl extends ServiceImpl<UserMapper, User> implements Us
     @Override
     public User login(String username, String password) {
         LambdaQueryWrapper<User> wrapper = new LambdaQueryWrapper<>();
-        wrapper.eq(User::getUsername, username);
+        wrapper.and(query -> query.eq(User::getUsername, username).or().eq(User::getPhone, username));
         User user = userMapper.selectOne(wrapper);
         if (user != null && password.equals(user.getPassword())) {
+            ensureUserEnabled(user);
+            user.setLastLoginTime(LocalDateTime.now());
+            userMapper.updateById(user);
             return user;
         }
         return null;
@@ -61,5 +65,33 @@ public class UserServiceImpl extends ServiceImpl<UserMapper, User> implements Us
             return userMapper.updateById(user) > 0;
         }
         return false;
+    }
+
+    @Override
+    public void ensureUserEnabled(User user) {
+        if (user == null || user.getStatus() == null || user.getStatus() == 0) {
+            throw new RuntimeException("账号已禁用");
+        }
+    }
+
+    @Override
+    public boolean canManageUser(Long operatorRoleId, Long targetRoleId) {
+        if (operatorRoleId == null || targetRoleId == null) {
+            return false;
+        }
+        if (operatorRoleId.equals(RoleEnum.SYSTEM_ADMIN)) {
+            return targetRoleId.equals(RoleEnum.PROPERTY_MANAGER);
+        }
+        return operatorRoleId.equals(RoleEnum.PROPERTY_MANAGER) && targetRoleId.equals(RoleEnum.OWNER);
+    }
+
+    @Override
+    public boolean updateUserStatus(Long userId, Integer status) {
+        User user = userMapper.selectById(userId);
+        if (user == null) {
+            return false;
+        }
+        user.setStatus(status);
+        return userMapper.updateById(user) > 0;
     }
 }

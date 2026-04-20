@@ -14,9 +14,17 @@ public class RepairOrder {
 
     private Long userId;
 
+    private Long repairTypeId;
+
+    private String contactName;
+
+    private String contactPhone;
+
     private String description;
 
     private String images;
+
+    private Integer priorityLevel;
 
     private Integer status;
 
@@ -24,9 +32,15 @@ public class RepairOrder {
 
     private LocalDateTime assignTime;
 
+    private String processingResult;
+
+    private String cancelReason;
+
     private LocalDateTime completeTime;
 
     private Integer rating;
+
+    private String satisfactionLabel;
 
     private String comment;
 

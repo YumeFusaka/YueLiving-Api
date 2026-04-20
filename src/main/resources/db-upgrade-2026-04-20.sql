@@ -1,0 +1,69 @@
+ALTER TABLE user ADD COLUMN last_login_time DATETIME COMMENT '最近登录时间';
+ALTER TABLE user ADD COLUMN remark VARCHAR(255) COMMENT '备注';
+
+ALTER TABLE property ADD COLUMN property_type VARCHAR(20) DEFAULT '住宅' COMMENT '房产类型';
+ALTER TABLE property ADD COLUMN owner_name_snapshot VARCHAR(50) COMMENT '业主姓名快照';
+ALTER TABLE property ADD COLUMN bind_time DATETIME COMMENT '绑定时间';
+
+ALTER TABLE bill ADD COLUMN owner_id BIGINT COMMENT '账单所属业主';
+ALTER TABLE bill ADD COLUMN bill_item_name VARCHAR(100) COMMENT '账单项目名称';
+ALTER TABLE bill ADD COLUMN unit_price DECIMAL(10,2) COMMENT '单价';
+ALTER TABLE bill ADD COLUMN usage_amount DECIMAL(10,2) COMMENT '用量';
+ALTER TABLE bill ADD COLUMN generate_type VARCHAR(20) DEFAULT 'MANUAL' COMMENT '生成方式';
+ALTER TABLE bill ADD COLUMN remark VARCHAR(255) COMMENT '费用说明';
+ALTER TABLE bill ADD COLUMN paid_amount DECIMAL(10,2) DEFAULT 0 COMMENT '已缴金额';
+
+ALTER TABLE repair_order ADD COLUMN repair_type_id BIGINT COMMENT '报修分类ID';
+ALTER TABLE repair_order ADD COLUMN contact_name VARCHAR(50) COMMENT '联系人姓名';
+ALTER TABLE repair_order ADD COLUMN contact_phone VARCHAR(20) COMMENT '联系人电话';
+ALTER TABLE repair_order ADD COLUMN priority_level TINYINT DEFAULT 1 COMMENT '优先级';
+ALTER TABLE repair_order ADD COLUMN processing_result TEXT COMMENT '处理结果';
+ALTER TABLE repair_order ADD COLUMN cancel_reason VARCHAR(255) COMMENT '取消原因';
+ALTER TABLE repair_order ADD COLUMN satisfaction_label VARCHAR(50) COMMENT '满意度标签';
+
+ALTER TABLE announcement ADD COLUMN summary VARCHAR(255) COMMENT '摘要';
+ALTER TABLE announcement ADD COLUMN category_code VARCHAR(50) COMMENT '公告分类';
+ALTER TABLE announcement ADD COLUMN status VARCHAR(20) DEFAULT 'PUBLISHED' COMMENT '状态';
+
+CREATE TABLE IF NOT EXISTS system_config (
+    id BIGINT PRIMARY KEY AUTO_INCREMENT COMMENT '配置ID',
+    config_key VARCHAR(100) NOT NULL UNIQUE COMMENT '配置键',
+    config_name VARCHAR(100) NOT NULL COMMENT '配置名称',
+    config_value TEXT COMMENT '配置值',
+    config_type VARCHAR(50) COMMENT '配置类型',
+    remark VARCHAR(255) COMMENT '备注',
+    create_time DATETIME DEFAULT CURRENT_TIMESTAMP COMMENT '创建时间',
+    update_time DATETIME DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP COMMENT '更新时间'
+) COMMENT '系统配置表';
+
+CREATE TABLE IF NOT EXISTS operation_log (
+    id BIGINT PRIMARY KEY AUTO_INCREMENT COMMENT '日志ID',
+    operator_id BIGINT NOT NULL COMMENT '操作人ID',
+    operator_role_id BIGINT NOT NULL COMMENT '操作人角色ID',
+    module_name VARCHAR(100) NOT NULL COMMENT '模块名称',
+    action_name VARCHAR(100) NOT NULL COMMENT '操作名称',
+    target_type VARCHAR(100) COMMENT '对象类型',
+    target_id BIGINT COMMENT '对象ID',
+    content TEXT COMMENT '操作内容',
+    create_time DATETIME DEFAULT CURRENT_TIMESTAMP COMMENT '创建时间'
+) COMMENT '操作日志表';
+
+CREATE TABLE IF NOT EXISTS repair_type (
+    id BIGINT PRIMARY KEY AUTO_INCREMENT COMMENT '分类ID',
+    type_name VARCHAR(100) NOT NULL COMMENT '分类名称',
+    sort_no INT DEFAULT 0 COMMENT '排序号',
+    status TINYINT DEFAULT 1 COMMENT '状态：0-禁用，1-启用',
+    create_time DATETIME DEFAULT CURRENT_TIMESTAMP COMMENT '创建时间',
+    update_time DATETIME DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP COMMENT '更新时间'
+) COMMENT '报修分类表';
+
+CREATE TABLE IF NOT EXISTS billing_rule (
+    id BIGINT PRIMARY KEY AUTO_INCREMENT COMMENT '规则ID',
+    bill_type VARCHAR(50) NOT NULL COMMENT '账单类型',
+    unit_price DECIMAL(10,2) NOT NULL COMMENT '单价',
+    cycle_type VARCHAR(20) NOT NULL COMMENT '周期类型',
+    status TINYINT DEFAULT 1 COMMENT '状态：0-禁用，1-启用',
+    remark VARCHAR(255) COMMENT '备注',
+    create_time DATETIME DEFAULT CURRENT_TIMESTAMP COMMENT '创建时间',
+    update_time DATETIME DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP COMMENT '更新时间'
+) COMMENT '计费规则表';

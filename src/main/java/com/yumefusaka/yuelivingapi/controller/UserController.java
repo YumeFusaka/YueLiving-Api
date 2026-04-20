@@ -6,6 +6,7 @@ import com.yumefusaka.yuelivingapi.common.role.RoleEnum;
 import com.yumefusaka.yuelivingapi.common.role.RoleRequired;
 import com.yumefusaka.yuelivingapi.pojo.DTO.LoginDTO;
 import com.yumefusaka.yuelivingapi.pojo.DTO.RegisterDTO;
+import com.yumefusaka.yuelivingapi.pojo.DTO.UserStatusDTO;
 import com.yumefusaka.yuelivingapi.pojo.Entity.User;
 import com.yumefusaka.yuelivingapi.service.UserService;
 import com.yumefusaka.yuelivingapi.utils.JwtUtils;
@@ -32,7 +33,10 @@ public class UserController {
 
     @PostMapping("/login")
     public Result<Map<String, Object>> login(@RequestBody LoginDTO loginDTO) {
-        User user = userService.login(loginDTO.getUsername(), loginDTO.getPassword());
+        String account = loginDTO.getAccount() != null && !loginDTO.getAccount().isBlank()
+                ? loginDTO.getAccount()
+                : loginDTO.getUsername();
+        User user = userService.login(account, loginDTO.getPassword());
         if (user != null) {
             String token = jwtUtils.generateToken(user.getId(), user.getUsername(), user.getRoleId());
             user.setPassword(null);
@@ -102,6 +106,15 @@ public class UserController {
             return Result.success("更新成功");
         }
         return Result.error("更新失败");
+    }
+
+    @PutMapping("/status")
+    @RoleRequired({RoleEnum.PROPERTY_MANAGER, RoleEnum.SYSTEM_ADMIN})
+    public Result<String> updateUserStatus(@RequestBody UserStatusDTO dto) {
+        if (userService.updateUserStatus(dto.getUserId(), dto.getStatus())) {
+            return Result.success("状态更新成功");
+        }
+        return Result.error("状态更新失败");
     }
 
     @PutMapping("/profile")

@@ -26,6 +26,10 @@ public class User {
 
     private Integer status;
 
+    private LocalDateTime lastLoginTime;
+
+    private String remark;
+
     @TableField(fill = FieldFill.INSERT)
     private LocalDateTime createTime;
 
