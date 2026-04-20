@@ -2,8 +2,8 @@ package com.yumefusaka.yuelivingapi.interceptor;
 
 import com.alibaba.fastjson.JSONObject;
 import com.yumefusaka.yuelivingapi.common.context.BaseContext;
-import com.yumefusaka.yuelivingapi.common.properties.JwtProperties;
 import com.yumefusaka.yuelivingapi.common.result.Result;
+import com.yumefusaka.yuelivingapi.common.role.RoleRequired;
 import com.yumefusaka.yuelivingapi.utils.JwtUtils;
 import io.jsonwebtoken.Claims;
 import jakarta.servlet.http.HttpServletRequest;
@@ -12,7 +12,9 @@ import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Component;
 import org.springframework.util.StringUtils;
+import org.springframework.web.method.HandlerMethod;
 import org.springframework.web.servlet.HandlerInterceptor;
+import java.util.Arrays;
 
 //自定义拦截器
 @Component //当前拦截器对象由Spring创建和管理
@@ -20,7 +22,7 @@ import org.springframework.web.servlet.HandlerInterceptor;
 public class LoginCheckInterceptor implements HandlerInterceptor {
 
     @Autowired
-    private JwtProperties jwtProperties;
+    private JwtUtils jwtUtils;
 
     //前置方式
     @Override
@@ -48,12 +50,36 @@ public class LoginCheckInterceptor implements HandlerInterceptor {
             return false;//不放行
         }
 
-        token = token.substring(7);
+        // 处理Bearer token
+        if (token.startsWith("Bearer ")) {
+            token = token.substring(7);
+        }
 
         //5.解析token，如果解析失败，返回错误结果（未登录）
         try {
-            Claims claims = JwtUtils.parseToken(jwtProperties.getSecretKey(), token);
-            BaseContext.setCurrentId((String) claims.get(""));
+            jwtUtils.parseToken(token);
+            Long userId = jwtUtils.getUserIdFromToken(token);
+            Long roleId = jwtUtils.getRoleIdFromToken(token);
+            BaseContext.setCurrentId(userId.toString());
+            BaseContext.setCurrentRoleId(roleId == null ? null : roleId.toString());
+
+            if (handler instanceof HandlerMethod handlerMethod) {
+                RoleRequired required = handlerMethod.getMethodAnnotation(RoleRequired.class);
+                if (required == null) {
+                    required = handlerMethod.getBeanType().getAnnotation(RoleRequired.class);
+                }
+                if (required != null) {
+                    Long currentRoleId = roleId;
+                    if (currentRoleId == null || Arrays.stream(required.value()).noneMatch(r -> r == currentRoleId)) {
+                        Result responseResult = Result.error("权限不足");
+                        String json = JSONObject.toJSONString(responseResult);
+                        response.setContentType("application/json;charset=utf-8");
+                        response.setStatus(403);
+                        response.getWriter().write(json);
+                        return false;
+                    }
+                }
+            }
         } catch (Exception e) {
             log.info("令牌解析失败!");
 
@@ -72,5 +98,10 @@ public class LoginCheckInterceptor implements HandlerInterceptor {
 
         //6.放行
         return true;
+    }
+
+    @Override
+    public void afterCompletion(HttpServletRequest request, HttpServletResponse response, Object handler, Exception ex) {
+        BaseContext.clear();
     }
 }
