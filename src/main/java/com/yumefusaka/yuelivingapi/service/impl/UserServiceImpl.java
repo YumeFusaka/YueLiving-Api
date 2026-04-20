@@ -9,6 +9,8 @@ import com.yumefusaka.yuelivingapi.service.UserService;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 
+import java.util.List;
+
 @Service
 public class UserServiceImpl extends ServiceImpl<UserMapper, User> implements UserService {
 
@@ -34,9 +36,20 @@ public class UserServiceImpl extends ServiceImpl<UserMapper, User> implements Us
         if (userMapper.selectOne(wrapper) != null) {
             return false;
         }
-        // 默认角色为业主
-        user.setRoleId(RoleEnum.OWNER);
+        // 如果没有指定角色，默认设置为业主
+        if (user.getRoleId() == null || user.getRoleId() == 0) {
+            user.setRoleId(RoleEnum.OWNER);
+        }
         user.setStatus(1);
         return userMapper.insert(user) > 0;
+    }
+
+    @Override
+    public List<User> getMaintenanceUsers() {
+        // 获取物业管理员和系统管理员作为维修人员
+        LambdaQueryWrapper<User> wrapper = new LambdaQueryWrapper<>();
+        wrapper.in(User::getRoleId, RoleEnum.PROPERTY_MANAGER, RoleEnum.SYSTEM_ADMIN);
+        wrapper.eq(User::getStatus, 1); // 只获取启用状态的用户
+        return userMapper.selectList(wrapper);
     }
 }

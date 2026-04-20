@@ -8,6 +8,7 @@ import com.yumefusaka.yuelivingapi.service.BillService;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.web.bind.annotation.*;
 
+import java.time.LocalDateTime;
 import java.util.List;
 
 @RestController
@@ -21,6 +22,13 @@ public class BillController {
     public Result<List<Bill>> getMyBills() {
         Long userId = Long.valueOf(com.yumefusaka.yuelivingapi.common.context.BaseContext.getCurrentId());
         List<Bill> bills = billService.getBillsByUserId(userId);
+        return Result.success(bills);
+    }
+
+    @GetMapping
+    @RoleRequired({RoleEnum.PROPERTY_MANAGER, RoleEnum.SYSTEM_ADMIN})
+    public Result<List<Bill>> getAllBills() {
+        List<Bill> bills = billService.list();
         return Result.success(bills);
     }
 
@@ -43,5 +51,28 @@ public class BillController {
     public Result<String> deleteBill(@PathVariable Long id) {
         billService.removeById(id);
         return Result.success("删除成功");
+    }
+
+    @PostMapping("/{id}/pay")
+    public Result<String> payBill(@PathVariable Long id) {
+        Bill bill = billService.getById(id);
+        if (bill == null) {
+            return Result.error("账单不存在");
+        }
+
+        // 检查是否是业主自己的账单
+        Long userId = Long.valueOf(com.yumefusaka.yuelivingapi.common.context.BaseContext.getCurrentId());
+        if (!bill.getPropertyId().equals(userId)) {
+            return Result.error("无权操作此账单");
+        }
+
+        if (bill.getStatus() == 1) {
+            return Result.error("账单已缴费");
+        }
+
+        bill.setStatus(1);
+        bill.setPayTime(LocalDateTime.now());
+        billService.updateById(bill);
+        return Result.success("缴费成功");
     }
 }

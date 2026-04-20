@@ -9,4 +9,5 @@ public class RegisterDTO {
     private String phone;
     private String email;
     private String realName;
+    private Long roleId;
 }

@@ -25,6 +25,13 @@ public class PropertyController {
         return Result.success(properties);
     }
 
+    @GetMapping
+    @RoleRequired({RoleEnum.PROPERTY_MANAGER, RoleEnum.SYSTEM_ADMIN})
+    public Result<List<Property>> getAllProperties() {
+        List<Property> properties = propertyService.list();
+        return Result.success(properties);
+    }
+
     @PostMapping
     @RoleRequired({RoleEnum.PROPERTY_MANAGER, RoleEnum.SYSTEM_ADMIN})
     public Result<String> addProperty(@RequestBody Property property) {
