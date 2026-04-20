@@ -8,6 +8,8 @@ import com.yumefusaka.yuelivingapi.pojo.DTO.LoginDTO;
 import com.yumefusaka.yuelivingapi.pojo.DTO.RegisterDTO;
 import com.yumefusaka.yuelivingapi.pojo.DTO.UserStatusDTO;
 import com.yumefusaka.yuelivingapi.pojo.Entity.User;
+import com.yumefusaka.yuelivingapi.pojo.Entity.OperationLog;
+import com.yumefusaka.yuelivingapi.service.OperationLogService;
 import com.yumefusaka.yuelivingapi.service.UserService;
 import com.yumefusaka.yuelivingapi.utils.JwtUtils;
 import org.springframework.beans.BeanUtils;
@@ -30,6 +32,9 @@ public class UserController {
 
     @Autowired
     private JwtUtils jwtUtils;
+
+    @Autowired
+    private OperationLogService operationLogService;
 
     @PostMapping("/login")
     public Result<Map<String, Object>> login(@RequestBody LoginDTO loginDTO) {
@@ -72,6 +77,12 @@ public class UserController {
         return Result.success(user);
     }
 
+    @GetMapping("/profile/logs")
+    public Result<List<OperationLog>> getMyLogs() {
+        Long userId = Long.valueOf(BaseContext.getCurrentId());
+        return Result.success(operationLogService.listByOperator(userId));
+    }
+
     @GetMapping
     @RoleRequired({RoleEnum.PROPERTY_MANAGER, RoleEnum.SYSTEM_ADMIN})
     public Result<List<User>> getUsers() {
@@ -98,6 +109,7 @@ public class UserController {
     @RoleRequired({RoleEnum.SYSTEM_ADMIN})
     public Result<String> addUser(@RequestBody User user) {
         if (userService.save(user)) {
+            operationLogService.record("用户管理", "新增用户", "user", user.getId(), "新增用户 " + user.getUsername());
             return Result.success("添加成功");
         }
         return Result.error("添加失败");
@@ -107,15 +119,27 @@ public class UserController {
     @RoleRequired({RoleEnum.SYSTEM_ADMIN})
     public Result<String> updateUser(@RequestBody User user) {
         if (userService.updateById(user)) {
+            operationLogService.record("用户管理", "更新用户", "user", user.getId(), "更新用户 " + user.getUsername());
             return Result.success("更新成功");
         }
         return Result.error("更新失败");
+    }
+
+    @DeleteMapping("/{id}")
+    @RoleRequired({RoleEnum.SYSTEM_ADMIN})
+    public Result<String> deleteUser(@PathVariable Long id) {
+        if (userService.removeById(id)) {
+            operationLogService.record("用户管理", "删除用户", "user", id, "删除用户 ID=" + id);
+            return Result.success("删除成功");
+        }
+        return Result.error("删除失败");
     }
 
     @PutMapping("/status")
     @RoleRequired({RoleEnum.PROPERTY_MANAGER, RoleEnum.SYSTEM_ADMIN})
     public Result<String> updateUserStatus(@RequestBody UserStatusDTO dto) {
         if (userService.updateUserStatus(dto.getUserId(), dto.getStatus())) {
+            operationLogService.record("用户管理", "更新状态", "user", dto.getUserId(), "状态变更为 " + dto.getStatus());
             return Result.success("状态更新成功");
         }
         return Result.error("状态更新失败");
@@ -131,6 +155,7 @@ public class UserController {
             existingUser.setPhone(user.getPhone());
             existingUser.setEmail(user.getEmail());
             if (userService.updateById(existingUser)) {
+                operationLogService.record("个人中心", "更新资料", "user", userId, "更新个人资料");
                 return Result.success("更新成功");
             }
         }
@@ -143,6 +168,7 @@ public class UserController {
         String oldPassword = passwordData.get("oldPassword");
         String newPassword = passwordData.get("newPassword");
         if (userService.changePassword(userId, oldPassword, newPassword)) {
+            operationLogService.record("个人中心", "修改密码", "user", userId, "修改登录密码");
             return Result.success("密码修改成功");
         }
         return Result.error("旧密码错误或修改失败");
@@ -169,6 +195,7 @@ public class UserController {
             User user = userService.getById(userId);
             user.setAvatar("/uploads/avatars/" + filename);
             userService.updateById(user);
+            operationLogService.record("个人中心", "上传头像", "user", userId, "上传头像");
 
             Map<String, String> data = new HashMap<>();
             data.put("url", "/uploads/avatars/" + filename);
