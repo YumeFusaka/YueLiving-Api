@@ -10,8 +10,12 @@ import com.yumefusaka.yuelivingapi.service.BillService;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 
+import java.math.BigDecimal;
+import java.time.LocalDate;
+import java.time.LocalDateTime;
 import java.util.List;
 import java.util.Map;
+import java.util.Objects;
 import java.util.stream.Collectors;
 
 @Service
@@ -46,10 +50,60 @@ public class BillServiceImpl extends ServiceImpl<BillMapper, Bill> implements Bi
         if (params.containsKey("status") && params.get("status") != null) {
             wrapper.eq(Bill::getStatus, params.get("status"));
         }
-        if (params.containsKey("type") && params.get("type") != null) {
-            wrapper.eq(Bill::getBillType, params.get("type"));
+        if (params.containsKey("billType") && params.get("billType") != null && !params.get("billType").toString().isBlank()) {
+            wrapper.eq(Bill::getBillType, params.get("billType"));
         }
-        // 可以添加更多筛选条件，如日期范围等
+        if (params.containsKey("period") && params.get("period") != null && !params.get("period").toString().isBlank()) {
+            wrapper.eq(Bill::getPeriod, params.get("period"));
+        }
+        wrapper.orderByDesc(Bill::getCreateTime);
         return billMapper.selectList(wrapper);
+    }
+
+    @Override
+    public boolean payBill(Long billId, Long currentUserId) {
+        Bill bill = getById(billId);
+        if (bill == null || !Objects.equals(bill.getOwnerId(), currentUserId) || bill.getStatus() == 1) {
+            return false;
+        }
+        bill.setStatus(1);
+        bill.setPaidAmount(bill.getAmount());
+        bill.setPayTime(LocalDateTime.now());
+        return updateById(bill);
+    }
+
+    @Override
+    public int generatePropertyFeeBills(String period) {
+        List<Property> properties = propertyMapper.selectList(new LambdaQueryWrapper<Property>()
+                .isNotNull(Property::getOwnerId)
+                .eq(Property::getStatus, 1));
+        int createdCount = 0;
+        for (Property property : properties) {
+            boolean exists = count(new LambdaQueryWrapper<Bill>()
+                    .eq(Bill::getPropertyId, property.getId())
+                    .eq(Bill::getBillType, "物业费")
+                    .eq(Bill::getPeriod, period)) > 0;
+            if (exists) {
+                continue;
+            }
+            BigDecimal area = property.getArea() == null ? BigDecimal.ZERO : property.getArea();
+            BigDecimal unitPrice = new BigDecimal("2.80");
+            Bill bill = new Bill();
+            bill.setPropertyId(property.getId());
+            bill.setOwnerId(property.getOwnerId());
+            bill.setBillType("物业费");
+            bill.setBillItemName(period + " 物业费");
+            bill.setUnitPrice(unitPrice);
+            bill.setUsageAmount(area);
+            bill.setAmount(area.multiply(unitPrice).setScale(2, BigDecimal.ROUND_HALF_UP));
+            bill.setPeriod(period);
+            bill.setGenerateType("AUTO");
+            bill.setStatus(0);
+            bill.setPaidAmount(BigDecimal.ZERO);
+            bill.setDueDate(LocalDate.now().plusDays(15));
+            save(bill);
+            createdCount++;
+        }
+        return createdCount;
     }
 }

@@ -73,9 +73,13 @@ public class UserController {
     }
 
     @GetMapping
-    @RoleRequired({RoleEnum.SYSTEM_ADMIN})
+    @RoleRequired({RoleEnum.PROPERTY_MANAGER, RoleEnum.SYSTEM_ADMIN})
     public Result<List<User>> getUsers() {
         List<User> users = userService.list();
+        Long currentRoleId = Long.valueOf(BaseContext.getCurrentRoleId());
+        if (currentRoleId.equals(RoleEnum.PROPERTY_MANAGER)) {
+            users = users.stream().filter(user -> RoleEnum.OWNER == user.getRoleId()).toList();
+        }
         // 清除密码信息
         users.forEach(user -> user.setPassword(null));
         return Result.success(users);

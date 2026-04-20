@@ -19,7 +19,7 @@ public class AnnouncementController {
 
     @GetMapping
     public Result<List<Announcement>> getAnnouncements() {
-        List<Announcement> announcements = announcementService.list();
+        List<Announcement> announcements = announcementService.listPublishedAnnouncements();
         return Result.success(announcements);
     }
 
@@ -28,6 +28,9 @@ public class AnnouncementController {
     public Result<String> addAnnouncement(@RequestBody Announcement announcement) {
         Long userId = Long.valueOf(com.yumefusaka.yuelivingapi.common.context.BaseContext.getCurrentId());
         announcement.setPublishUserId(userId);
+        if (announcement.getStatus() == null || announcement.getStatus().isBlank()) {
+            announcement.setStatus("PUBLISHED");
+        }
         announcementService.save(announcement);
         return Result.success("发布成功");
     }

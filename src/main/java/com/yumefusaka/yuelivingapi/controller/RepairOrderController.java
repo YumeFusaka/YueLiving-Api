@@ -32,8 +32,8 @@ public class RepairOrderController {
 
     @GetMapping
     @RoleRequired({RoleEnum.PROPERTY_MANAGER, RoleEnum.SYSTEM_ADMIN})
-    public Result<List<RepairOrder>> getAllRepairs() {
-        List<RepairOrder> repairs = repairOrderService.list();
+    public Result<List<RepairOrder>> getAllRepairs(@RequestParam Map<String, Object> params) {
+        List<RepairOrder> repairs = repairOrderService.getRepairsWithFilter(params);
         return Result.success(repairs);
     }
 
@@ -41,6 +41,9 @@ public class RepairOrderController {
     public Result<String> addRepair(@RequestBody RepairOrder repairOrder) {
         Long userId = Long.valueOf(com.yumefusaka.yuelivingapi.common.context.BaseContext.getCurrentId());
         repairOrder.setUserId(userId);
+        if (repairOrder.getStatus() == null) {
+            repairOrder.setStatus(0);
+        }
         repairOrderService.save(repairOrder);
         return Result.success("提交成功");
     }
@@ -55,7 +58,7 @@ public class RepairOrderController {
         }
         repair.setAssignUserId(assignUserId);
         repair.setAssignTime(LocalDateTime.now());
-        repair.setStatus(1); // 处理中
+        repair.setStatus(1);
         repairOrderService.updateById(repair);
         return Result.success("分配成功");
     }
@@ -67,7 +70,7 @@ public class RepairOrderController {
         if (repair == null) {
             return Result.error("工单不存在");
         }
-        repair.setStatus(2); // 已完成
+        repair.setStatus(3);
         repair.setCompleteTime(LocalDateTime.now());
         repairOrderService.updateById(repair);
         return Result.success("工单已完成");
@@ -86,7 +89,7 @@ public class RepairOrderController {
             return Result.error("无权评价此工单");
         }
 
-        if (repair.getStatus() != 2) {
+        if (repair.getStatus() != 3) {
             return Result.error("只能评价已完成的工单");
         }
 
