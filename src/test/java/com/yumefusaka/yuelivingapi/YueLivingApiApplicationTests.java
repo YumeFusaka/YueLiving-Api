@@ -1,6 +1,7 @@
 package com.yumefusaka.yuelivingapi;
 
 import com.baomidou.mybatisplus.core.conditions.query.LambdaQueryWrapper;
+import com.fasterxml.jackson.databind.ObjectMapper;
 import com.yumefusaka.yuelivingapi.mapper.PropertyMapper;
 import com.yumefusaka.yuelivingapi.mapper.UserMapper;
 import com.yumefusaka.yuelivingapi.pojo.DTO.BindOwnerDTO;
@@ -12,6 +13,7 @@ import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.context.SpringBootTest;
 
+import java.time.LocalDateTime;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.util.List;
@@ -19,8 +21,9 @@ import java.util.UUID;
 
 import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertNotNull;
-import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.junit.jupiter.api.Assertions.assertTrue;
+import static org.junit.jupiter.api.Assertions.assertThrows;
+import static org.junit.jupiter.api.Assertions.assertEquals;
 
 @SpringBootTest
 class YueLivingApiApplicationTests {
@@ -37,8 +40,25 @@ class YueLivingApiApplicationTests {
 	@Autowired
 	private PropertyMapper propertyMapper;
 
+	@Autowired
+	private ObjectMapper objectMapper;
+
 	@Test
 	void contextLoads() {
+	}
+
+	@Test
+	void jacksonShouldDeserializeSpaceSeparatedLocalDateTime() throws Exception {
+		String json = """
+				{
+				  "username": "role-update-user",
+				  "lastLoginTime": "2026-04-20 22:56:27"
+				}
+				""";
+
+		User user = objectMapper.readValue(json, User.class);
+
+		assertEquals(LocalDateTime.of(2026, 4, 20, 22, 56, 27), user.getLastLoginTime());
 	}
 
 	@Test
